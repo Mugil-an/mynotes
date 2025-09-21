@@ -17,6 +17,7 @@ void main() {
         primarySwatch: Colors.teal,
       ),
       home: const HomePage(),
+      debugShowCheckedModeBanner: false,
       routes: {
         loginRoute: (context) => const LoginView(),
         registerRoute: (context) => const RegisterView(),
