@@ -10,9 +10,16 @@ class NoteService {
   List<DatabaseNote> _notes = [];
 
   static final NoteService _shared = NoteService._sharedInstance();
-  NoteService._sharedInstance();
+  NoteService._sharedInstance(){
+    _notesStreamController = StreamController<List<DatabaseNote>>.broadcast(
+      onListen : () {
+      _notesStreamController.sink.add(_notes);
+      },
+    );
+  }
   factory NoteService() =>  _shared;
-  final _notesStreamController = StreamController<List<DatabaseNote>>.broadcast();
+  late final StreamController<List<DatabaseNote>> _notesStreamController;
+
   Future<void> _cacheNotes() async {
     await _ensureDbIsOpen();
     final allNotes = await getAllNote();
@@ -24,10 +31,10 @@ class NoteService {
 
   Future<DatabaseUser> getOrCreateUser({required String email}) async {
     try{
-      final user = getUser(email: email);
+      final user = await getUser(email: email);
       return user;
     } on UserNotFound{
-      final user = createUser(email: email);
+      final user = await createUser(email: email);
       return user;
     }catch (e){
       rethrow;
@@ -165,7 +172,7 @@ class NoteService {
       await db.execute(createNotesTable);
       await _cacheNotes();
     } on MissingPlatformDirectoryException {
-      UnableToGetDocumentsDirectory();
+      throw UnableToGetDocumentsDirectory();
     }
   }
 

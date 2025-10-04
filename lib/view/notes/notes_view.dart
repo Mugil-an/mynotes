@@ -3,7 +3,10 @@ import 'package:mynotes/constants/routes.dart';
 import 'package:mynotes/enums/menu_action.dart';
 import 'package:mynotes/services/auth/auth_service.dart';
 import 'package:mynotes/services/crud/note_service.dart';
+import 'package:mynotes/utilities/dialogs/logout_dialog.dart';
 import 'package:mynotes/view/notes/new_note_view.dart';
+import 'package:mynotes/view/notes/note_list_view.dart';
+
 // import 'dart:developer' as devtools show log;
 class NotesView extends StatefulWidget {
   const NotesView({super.key});
@@ -19,15 +22,9 @@ class _NotesViewState extends State<NotesView> {
   @override
   void initState() {
     _noteService = NoteService();
-    _noteService.open();
     super.initState();
   }
 
-  @override
-  void dispose() {
-    _noteService.close();
-    super.dispose();
-  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,19 +32,20 @@ class _NotesViewState extends State<NotesView> {
         title: const Text('Your Notes'),
         backgroundColor: Colors.teal,
         actions: [
-          IconButton(onPressed: () =>{
-            Navigator.of(context).pushNamed(newNoteRoute),
-          }, icon: const Icon(Icons.add)),
+          IconButton(
+            onPressed: () => {Navigator.of(context).pushNamed(newNoteRoute)},
+            icon: const Icon(Icons.add),
+          ),
           PopupMenuButton<MenuAction>(
             onSelected: (value) async {
               switch (value) {
                 case MenuAction.logout:
-                  final shouldLogout =
-                      await showLogOutDialog(context);
+                  final shouldLogout = await showLogOutDialog(context);
                   if (shouldLogout) {
                     AuthService.firebase().logOut();
-                    Navigator.of(context)
-                        .pushNamedAndRemoveUntil('/login/', (_) => false);
+                    Navigator.of(
+                      context,
+                    ).pushNamedAndRemoveUntil('/login/', (_) => false);
                   }
               }
             },
@@ -59,58 +57,41 @@ class _NotesViewState extends State<NotesView> {
                 ),
               ];
             },
-          )
+          ),
         ],
       ),
       body: FutureBuilder(
         future: _noteService.getOrCreateUser(email: userEmail),
-        builder: (context,snapshot){
-          switch(snapshot.connectionState){
+        builder: (context, snapshot) {
+          switch (snapshot.connectionState) {
             case ConnectionState.done:
               return StreamBuilder(
-              stream: _noteService.allNotes,
-              builder:(context,snapshot){
-                switch(snapshot.connectionState){
-                  case ConnectionState.waiting:
-                  case ConnectionState.active:
-                    return const Text("Waiting for all Notes...");
-                  default:
-                    return CircularProgressIndicator();
-                    
-                }
-              }
+                stream: _noteService.allNotes,
+                builder: (context, snapshot) {
+                  switch (snapshot.connectionState) {
+                    case ConnectionState.waiting:
+                    case ConnectionState.active:
+                      if (snapshot.hasData) {
+                        final allNotes = snapshot.data as List<DatabaseNote>;
+                        return NotesListView(
+                          notes :allNotes,
+                          onDeleteNote: (note) async{
+                            await _noteService.deleteNote(id: note.id);
+                          },
+                        );
+                      } else {
+                        return CircularProgressIndicator();
+                      }
+                    default:
+                      return CircularProgressIndicator();
+                  }
+                },
               );
             default:
               return CircularProgressIndicator();
           }
-        }
-      )
+        },
+      ),
     );
   }
-}
-
-Future<bool> showLogOutDialog(BuildContext context) {
-  return showDialog<bool>(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: const Text('Sign out'),
-        content: const Text('Are you sure you want to sign out?'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(false);
-            },
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(true);
-            },
-            child: const Text('Log out'),
-          ),
-        ],
-      );
-    },
-  ).then((value) => value ?? false);
 }
