@@ -4,7 +4,7 @@ import 'package:mynotes/enums/menu_action.dart';
 import 'package:mynotes/services/auth/auth_service.dart';
 import 'package:mynotes/services/crud/note_service.dart';
 import 'package:mynotes/utilities/dialogs/logout_dialog.dart';
-import 'package:mynotes/view/notes/new_note_view.dart';
+import 'package:mynotes/view/notes/create_update_note_view.dart';
 import 'package:mynotes/view/notes/note_list_view.dart';
 
 // import 'dart:developer' as devtools show log;
@@ -33,7 +33,7 @@ class _NotesViewState extends State<NotesView> {
         backgroundColor: Colors.teal,
         actions: [
           IconButton(
-            onPressed: () => {Navigator.of(context).pushNamed(newNoteRoute)},
+            onPressed: () => {Navigator.of(context).pushNamed(createOrUpdateNoteRoute)},
             icon: const Icon(Icons.add),
           ),
           PopupMenuButton<MenuAction>(
@@ -78,6 +78,9 @@ class _NotesViewState extends State<NotesView> {
                           onDeleteNote: (note) async{
                             await _noteService.deleteNote(id: note.id);
                           },
+                          onTap: (note){
+                            Navigator.of(context).pushNamed(createOrUpdateNoteRoute,arguments: note);
+                          }
                         );
                       } else {
                         return CircularProgressIndicator();
